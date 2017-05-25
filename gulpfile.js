@@ -1,3 +1,4 @@
+var path = require('path')
 var gulp = require('gulp')
 var less = require('gulp-less')
 var postcss = require('gulp-postcss')
@@ -50,26 +51,22 @@ gulp.task('build:css', function () {
 gulp.task('dev:less', function () {
     var processors = [px2rem({ remUnit: 10 })]
     gulp.src(src + '**/*.less')
-        .pipe(less().on('error', function (e) {
+        .pipe(less({relativeUrls: true}).on('error', function (e) {
             console.error(e.message)
             this.emit('end')
         }))
-        .pipe(postcss(processors))
-        .pipe(gulp.dest(dist))
+        // .pipe(postcss(processors))
+        .pipe(gulp.dest(dev))
+        .pipe(browserSync.reload({ stream: true }))
 })
 
 gulp.task('build:less', function () {
     var processors = [px2rem({ remUnit: 10 })]
     gulp.src(src + '**/*.less')
-        .pipe(less())
-        .pipe(postcss(processors))
-        .pipe(gulp.dest(dev))
-        .pipe(browserSync.reload({ stream: true }))
+        .pipe(less({relativeUrls: true}))
+        .pipe(gulp.dest(dist))
+
 })
-
-
-gulp.task('dev:style', ['dev:css', 'dev:less'])
-gulp.task('build:style', ['build:css', 'build:less'])
 
 gulp.task('build:static', function () {
     gulp.src(src + '/**/*.?(png|jpg|gif)')
@@ -110,8 +107,8 @@ gulp.task('build:script', function () {
 })
 
 
-gulp.task('release', ['build:style', 'build:static', 'build:html', 'build:script'])
-gulp.task('prerender', ['dev:style', 'build:static', 'dev:html', 'dev:script'])
+gulp.task('release', ['build:css', 'build:less', 'build:static', 'build:html', 'build:script'])
+gulp.task('prerender', ['dev:css', 'dev:less', 'build:static', 'dev:html', 'dev:script'])
 
 gulp.task('watch', function () {
     gulp.watch(src + '**/*.less', ['dev:less'])
