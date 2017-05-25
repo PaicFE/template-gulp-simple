@@ -17,29 +17,37 @@ var uglify = require('gulp-uglify')
 
 var config = {
     src: 'src',
-    dest: 'dist',
+    dist: 'dist',
+    dev: 'dev',
     file: 'hello',
     port: 3000,
 }
 
 var src = './' + config.src + '/' + config.file
-var dest = './' + config.dest + '/' + config.file
+var dist = './' + config.dist + '/' + config.file
+var dev = './' + config.dev + '/' + config.file
+var dest = dist
 
 gulp.task('build:rm', function () {
     gulp.src([dest], { read: false })
         .pipe(rimraf())
 })
 
-gulp.task('build:css', function () {
-    gulp.src(src + '/**/*.css')
-        // .pipe(rev({merge:true}))
-        // .pipe(rev())
-        .pipe(minify())
-        .pipe(gulp.dest(dest))
+
+gulp.task('dev:css', function(){
+      gulp.src(src + '/**/*.css')
+        .pipe(gulp.dest(dev))
         .pipe(browserSync.reload({ stream: true }))
 })
 
-gulp.task('build:less', function () {
+gulp.task('build:css', function () {
+    gulp.src(src + '/**/*.css')
+        .pipe(minify())
+        .pipe(gulp.dest(dist))
+})
+
+
+gulp.task('dev:less', function () {
     var processors = [px2rem({ remUnit: 10 })]
     gulp.src(src + '**/*.less')
         .pipe(less().on('error', function (e) {
@@ -47,15 +55,32 @@ gulp.task('build:less', function () {
             this.emit('end')
         }))
         .pipe(postcss(processors))
-        .pipe(gulp.dest(dest))
+        .pipe(gulp.dest(dist))
+})
+
+gulp.task('build:less', function () {
+    var processors = [px2rem({ remUnit: 10 })]
+    gulp.src(src + '**/*.less')
+        .pipe(less())
+        .pipe(postcss(processors))
+        .pipe(gulp.dest(dev))
         .pipe(browserSync.reload({ stream: true }))
 })
 
+
+gulp.task('dev:style', ['dev:css', 'dev:less'])
 gulp.task('build:style', ['build:css', 'build:less'])
 
 gulp.task('build:static', function () {
     gulp.src(src + '/**/*.?(png|jpg|gif)')
         .pipe(gulp.dest(dest))
+})
+
+
+gulp.task('dev:html', function(){
+     gulp.src(src + '/**/*.html')
+        .pipe(gulp.dest(dev))
+        .pipe(browserSync.reload({ stream: true }))
 })
 
 gulp.task('build:html', function () {
@@ -68,31 +93,38 @@ gulp.task('build:html', function () {
     }
     gulp.src(src + '/**/*.html')
         .pipe(htmlmin(options))
-        .pipe(gulp.dest(dest))
+        .pipe(gulp.dest(dist))
+})
+
+
+gulp.task('dev:script', function () {
+    gulp.src(src + '/**/*.js')
+        .pipe(gulp.dest(dev))
         .pipe(browserSync.reload({ stream: true }))
 })
 
 gulp.task('build:script', function () {
     gulp.src(src + '/**/*.js')
         .pipe(uglify())
-        .pipe(gulp.dest(dest))
-        .pipe(browserSync.reload({ stream: true }))
+        .pipe(gulp.dest(dist))
 })
 
+
 gulp.task('release', ['build:style', 'build:static', 'build:html', 'build:script'])
+gulp.task('prerender', ['dev:style', 'build:static', 'dev:html', 'dev:script'])
 
 gulp.task('watch', function () {
-    gulp.watch(src + '**/*.less', ['build:less'])
-    gulp.watch(src + '**/*.css', ['build:css'])
-    gulp.watch(src + '**/*.js', ['build:script'])
-    gulp.watch(src + '**/*.html', ['build:html'])
+    gulp.watch(src + '**/*.less', ['dev:less'])
+    gulp.watch(src + '**/*.css', ['dev:css'])
+    gulp.watch(src + '**/*.js', ['dev:script'])
+    gulp.watch(src + '**/*.html', ['dev:html'])
 })
 
 gulp.task('server', function () {
     var port = config.port
     browserSync.init({
         server: {
-            baseDir: './' + config.dest
+            baseDir: config.dev
         },
         ui: {
             port: port + 1,
@@ -105,7 +137,9 @@ gulp.task('server', function () {
     })
 })
 
-gulp.task('default', ['release'], function () {
+gulp.task('default', function () {
+    dest = dev
+    gulp.start('prerender')
     gulp.start('server')
     gulp.start('watch')
 })
