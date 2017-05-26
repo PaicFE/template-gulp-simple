@@ -1,7 +1,7 @@
 var gulp = require('gulp')
 var gulpif = require('gulp-if')
+var bs = require('browser-sync')
 var less = require('gulp-less')
-var base64 = require('gulp-base64')
 var cssnano = require('gulp-cssnano')
 var rimraf = require('gulp-rimraf')
 var postcss = require('gulp-postcss')
@@ -11,9 +11,10 @@ var posthtmlPx2rem = require('posthtml-px2rem')
 var autoprefixer = require('autoprefixer')
 var imagemin = require('gulp-imagemin')
 var pngquant = require('imagemin-pngquant')
+var lazyimagecss = require('gulp-lazyimagecss')
+var base64 = require('gulp-base64')
 var rev = require('gulp-rev')
 var revCollector = require('gulp-rev-collector')
-var bs = require('browser-sync')
 var clean = require('gulp-clean')
 var cache = require('gulp-cache')
 var htmlmin = require('gulp-htmlmin')
@@ -28,7 +29,7 @@ var config = {
     port: 3000,
     processors: [
         postcssPxtorem({
-            root_value: '20', // 基准值 html{ font-zise: 20px; }
+            root_value: 20, // 基准值 html{ font-zise: 20px; }
             prop_white_list: [], // 对所有 px 值生效
             minPixelValue: 2 // 忽略 1px 值
         }),
@@ -60,6 +61,7 @@ gulp.task('build:rm', function () {
 
 gulp.task('build:css', function () {
     gulp.src(src + '/**/*.css')
+        .pipe(lazyimagecss())
         .pipe(postcss(config.processors))
         .pipe(gulpif(config.isProd, cssnano()))
         .pipe(gulp.dest(dest))
@@ -69,6 +71,7 @@ gulp.task('build:css', function () {
 gulp.task('build:less', function () {
     gulp.src(src + '/**/*.less')
         .pipe(less().on('error', function () { this.emit('end') }))
+        .pipe(lazyimagecss())
         .pipe(postcss(config.processors))
         .pipe(gulpif(config.isProd, cssnano()))
         .pipe(gulp.dest(dest))

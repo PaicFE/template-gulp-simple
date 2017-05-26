@@ -2,8 +2,6 @@
 
 This is a template for simple gulp project, inspired by [tmt-workflow](https://github.com/weixin/tmt-workflow) and [weui](https://github.com/weui/weui).
 
-
-
 ## Features
 
 - browser-sync
@@ -13,7 +11,9 @@ This is a template for simple gulp project, inspired by [tmt-workflow](https://g
    - autoprefixer
 - cssnano
 - htmlmin
-- imagemin(webp)
+- imagemin
+- lazyimagecss
+- webp
 - sprite
 - gzip
 
