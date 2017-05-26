@@ -1,15 +1,17 @@
-var path = require('path')
 var gulp = require('gulp')
+var gulpif = require('gulp-if')
 var less = require('gulp-less')
-var postcss = require('gulp-postcss')
-var px2rem = require('postcss-px2rem')
 var base64 = require('gulp-base64')
-var minify = require('gulp-minify-css')
+var cssnano = require('gulp-cssnano')
 var rimraf = require('gulp-rimraf')
-
+var postcss = require('gulp-postcss')
+var postcssPxtorem = require('postcss-pxtorem')
+var posthtml = require('gulp-posthtml')
+var posthtmlPx2rem = require('posthtml-px2rem')
+var autoprefixer = require('autoprefixer')
 var rev = require('gulp-rev')
 var revCollector = require('gulp-rev-collector')
-var browserSync = require('browser-sync')
+var bs = require('browser-sync')
 var clean = require('gulp-clean')
 var cache = require('gulp-cache')
 var htmlmin = require('gulp-htmlmin')
@@ -23,8 +25,25 @@ var config = {
     file: 'hello',
     port: 3000,
     processors: [
-        px2rem({ remUnit: 10 })
+        postcssPxtorem({
+            root_value: '20', // 基准值 html{ font-zise: 20px; }
+            prop_white_list: [], // 对所有 px 值生效
+            minPixelValue: 2 // 忽略 1px 值
+        }),
+        autoprefixer({ browsers: ['last 5 versions'] }),
     ],
+    htmlRem: posthtmlPx2rem({
+        rootValue: 20,
+        minPixelValue: 2
+    }),
+    html: {
+        removeComments: true, // 清除HTML注释
+        collapseWhitespace: true,//压缩HTML
+        removeEmptyAttributes: true, // 删除所有空格作属性值 <input id="" /> ==> <input />
+        minifyJS: true, // 压缩页面JS
+        minifyCSS: true, // 压缩页面CSS
+    },
+    isProd: true
 }
 
 var src = './' + config.src + '/' + config.file
@@ -37,36 +56,21 @@ gulp.task('build:rm', function () {
         .pipe(rimraf())
 })
 
-
-gulp.task('dev:css', function(){
-      gulp.src(src + '/**/*.css')
-        .pipe(gulp.dest(dev))
-        .pipe(browserSync.reload({ stream: true }))
-})
-
 gulp.task('build:css', function () {
     gulp.src(src + '/**/*.css')
-        .pipe(minify())
-        .pipe(gulp.dest(dist))
-})
-
-
-gulp.task('dev:less', function () {
-    gulp.src(src + '/**/*.less')
-        .pipe(less().on('error', function (e) {
-            console.error(e.message)
-            this.emit('end')
-        }))
         .pipe(postcss(config.processors))
-        .pipe(gulp.dest(dev))
-        .pipe(browserSync.reload({ stream: true }))
+        .pipe(gulpif(config.isProd, cssnano()))
+        .pipe(gulp.dest(dest))
+        .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
 })
 
 gulp.task('build:less', function () {
     gulp.src(src + '/**/*.less')
-        .pipe(less())
+        .pipe(less().on('error', function () { this.emit('end') }))
         .pipe(postcss(config.processors))
-        .pipe(gulp.dest(dist))
+        .pipe(gulpif(config.isProd, cssnano()))
+        .pipe(gulp.dest(dest))
+        .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
 })
 
 gulp.task('build:static', function () {
@@ -74,53 +78,33 @@ gulp.task('build:static', function () {
         .pipe(gulp.dest(dest))
 })
 
-
-gulp.task('dev:html', function(){
-     gulp.src(src + '/**/*.html')
-        .pipe(gulp.dest(dev))
-        .pipe(browserSync.reload({ stream: true }))
-})
-
 gulp.task('build:html', function () {
-    var options = {
-        removeComments: true, // 清除HTML注释
-        collapseWhitespace: true,//压缩HTML
-        removeEmptyAttributes: true, // 删除所有空格作属性值 <input id="" /> ==> <input />
-        minifyJS: true, // 压缩页面JS
-        minifyCSS: true, // 压缩页面CSS
-    }
     gulp.src(src + '/**/*.html')
-        .pipe(htmlmin(options))
-        .pipe(gulp.dest(dist))
-})
-
-
-gulp.task('dev:script', function () {
-    gulp.src(src + '/**/*.js')
-        .pipe(gulp.dest(dev))
-        .pipe(browserSync.reload({ stream: true }))
+        .pipe(posthtml(posthtmlPx2rem({rootValue: 20, minPixelValue: 2})))
+        .pipe(gulpif(config.isProd, htmlmin(config.html)))
+        .pipe(gulp.dest(dest))
+        .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
 })
 
 gulp.task('build:script', function () {
     gulp.src(src + '/**/*.js')
-        .pipe(uglify())
-        .pipe(gulp.dest(dist))
+        .pipe(gulpif(config.isProd, uglify()))
+        .pipe(gulp.dest(dest))
+        .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
 })
 
-
 gulp.task('release', ['build:css', 'build:less', 'build:static', 'build:html', 'build:script'])
-gulp.task('prerender', ['dev:css', 'dev:less', 'build:static', 'dev:html', 'dev:script'])
 
 gulp.task('watch', function () {
-    gulp.watch(src + '/**/*.less', ['dev:less'])
-    gulp.watch(src + '/**/*.css', ['dev:css'])
-    gulp.watch(src + '/**/*.js', ['dev:script'])
-    gulp.watch(src + '/**/*.html', ['dev:html'])
+    gulp.watch(src + '/**/*.less', ['build:less'])
+    gulp.watch(src + '/**/*.css', ['build:css'])
+    gulp.watch(src + '/**/*.js', ['build:script'])
+    gulp.watch(src + '/**/*.html', ['build:html'])
 })
 
 gulp.task('server', function () {
     var port = config.port
-    browserSync.init({
+    bs.init({
         server: {
             baseDir: config.dev
         },
@@ -137,7 +121,8 @@ gulp.task('server', function () {
 
 gulp.task('default', function () {
     dest = dev
-    gulp.start('prerender')
+    config.isProd = false
+    gulp.start('release')
     gulp.start('server')
     gulp.start('watch')
 })
