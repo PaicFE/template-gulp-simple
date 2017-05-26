@@ -22,6 +22,9 @@ var config = {
     dev: 'dev',
     file: 'hello',
     port: 3000,
+    processors: [
+        px2rem({ remUnit: 10 })
+    ],
 }
 
 var src = './' + config.src + '/' + config.file
@@ -49,23 +52,21 @@ gulp.task('build:css', function () {
 
 
 gulp.task('dev:less', function () {
-    var processors = [px2rem({ remUnit: 10 })]
-    gulp.src(src + '**/*.less')
-        .pipe(less({relativeUrls: true}).on('error', function (e) {
+    gulp.src(src + '/**/*.less')
+        .pipe(less().on('error', function (e) {
             console.error(e.message)
             this.emit('end')
         }))
-        // .pipe(postcss(processors))
+        .pipe(postcss(config.processors))
         .pipe(gulp.dest(dev))
         .pipe(browserSync.reload({ stream: true }))
 })
 
 gulp.task('build:less', function () {
-    var processors = [px2rem({ remUnit: 10 })]
-    gulp.src(src + '**/*.less')
-        .pipe(less({relativeUrls: true}))
+    gulp.src(src + '/**/*.less')
+        .pipe(less())
+        .pipe(postcss(config.processors))
         .pipe(gulp.dest(dist))
-
 })
 
 gulp.task('build:static', function () {
@@ -111,10 +112,10 @@ gulp.task('release', ['build:css', 'build:less', 'build:static', 'build:html', '
 gulp.task('prerender', ['dev:css', 'dev:less', 'build:static', 'dev:html', 'dev:script'])
 
 gulp.task('watch', function () {
-    gulp.watch(src + '**/*.less', ['dev:less'])
-    gulp.watch(src + '**/*.css', ['dev:css'])
-    gulp.watch(src + '**/*.js', ['dev:script'])
-    gulp.watch(src + '**/*.html', ['dev:html'])
+    gulp.watch(src + '/**/*.less', ['dev:less'])
+    gulp.watch(src + '/**/*.css', ['dev:css'])
+    gulp.watch(src + '/**/*.js', ['dev:script'])
+    gulp.watch(src + '/**/*.html', ['dev:html'])
 })
 
 gulp.task('server', function () {
