@@ -12,8 +12,8 @@ var autoprefixer = require('autoprefixer')
 var imagemin = require('gulp-imagemin')
 var lazyimagecss = require('gulp-lazyimagecss')
 var webp = require('gulp-webp')
-var rev = require('gulp-rev')
-var revCollector = require('gulp-rev-collector')
+var RevAll = require('gulp-rev-all')
+var revDel = require('gulp-rev-delete-original')
 var clean = require('gulp-clean')
 var cache = require('gulp-cache')
 var htmlmin = require('gulp-htmlmin')
@@ -52,6 +52,7 @@ var src = './' + config.src + '/' + config.file
 var dist = './' + config.dist + '/' + config.file
 var dev = './' + config.dev + '/' + config.file
 var dest = dist
+var tmp = './tmp/' + config.file
 
 gulp.task('build:rm', function () {
     gulp.src([dest], { read: false })
@@ -80,13 +81,14 @@ gulp.task('build:less', function () {
 gulp.task('build:static', function () {
     gulp.src(src + '/**/*.?(png|jpg|gif)')
         .pipe(imagemin())
+        .pipe(gulp.dest(dest))
         .pipe(webp())
         .pipe(gulp.dest(dest))
 })
 
 gulp.task('build:html', function () {
     gulp.src(src + '/**/*.html')
-        .pipe(posthtml(posthtmlPx2rem({rootValue: 20, minPixelValue: 2})))
+        .pipe(posthtml(posthtmlPx2rem({ rootValue: 20, minPixelValue: 2 })))
         .pipe(gulpif(config.isProd, htmlmin(config.html)))
         .pipe(gulp.dest(dest))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
@@ -100,6 +102,18 @@ gulp.task('build:script', function () {
 })
 
 gulp.task('release', ['build:css', 'build:less', 'build:static', 'build:html', 'build:script'])
+
+gulp.task('hash', function(){
+    gulp.src(dest + '/**/*')
+        .pipe(gulp.dest(tmp))  
+        .pipe(RevAll.revision())
+        .pipe(gulp.dest(tmp))
+        .pipe(revDel({
+            exclude: /(.html|.htm)$/
+        }))
+        .pipe(RevAll.manifestFile())
+        .pipe(gulp.dest(tmp))
+})
 
 gulp.task('watch', function () {
     gulp.watch(src + '/**/*.css', ['build:css'])

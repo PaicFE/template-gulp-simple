@@ -14,8 +14,10 @@ This is a template for simple gulp project, inspired by [tmt-workflow](https://g
 - imagemin
 - lazyimagecss
 - webp
+- revision
 - sprite
 - gzip
+
 
 ## Folders
 
