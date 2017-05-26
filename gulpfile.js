@@ -9,6 +9,8 @@ var postcssPxtorem = require('postcss-pxtorem')
 var posthtml = require('gulp-posthtml')
 var posthtmlPx2rem = require('posthtml-px2rem')
 var autoprefixer = require('autoprefixer')
+var imagemin = require('gulp-imagemin')
+var pngquant = require('imagemin-pngquant')
 var rev = require('gulp-rev')
 var revCollector = require('gulp-rev-collector')
 var bs = require('browser-sync')
@@ -75,6 +77,7 @@ gulp.task('build:less', function () {
 
 gulp.task('build:static', function () {
     gulp.src(src + '/**/*.?(png|jpg|gif)')
+        .pipe(imagemin({use: [pngquant()]}))
         .pipe(gulp.dest(dest))
 })
 
@@ -96,8 +99,8 @@ gulp.task('build:script', function () {
 gulp.task('release', ['build:css', 'build:less', 'build:static', 'build:html', 'build:script'])
 
 gulp.task('watch', function () {
-    gulp.watch(src + '/**/*.less', ['build:less'])
     gulp.watch(src + '/**/*.css', ['build:css'])
+    gulp.watch(src + '/**/*.less', ['build:less'])
     gulp.watch(src + '/**/*.js', ['build:script'])
     gulp.watch(src + '/**/*.html', ['build:html'])
 })
