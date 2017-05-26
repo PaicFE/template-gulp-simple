@@ -10,9 +10,8 @@ var posthtml = require('gulp-posthtml')
 var posthtmlPx2rem = require('posthtml-px2rem')
 var autoprefixer = require('autoprefixer')
 var imagemin = require('gulp-imagemin')
-var pngquant = require('imagemin-pngquant')
 var lazyimagecss = require('gulp-lazyimagecss')
-var base64 = require('gulp-base64')
+var webp = require('gulp-webp')
 var rev = require('gulp-rev')
 var revCollector = require('gulp-rev-collector')
 var clean = require('gulp-clean')
@@ -80,7 +79,8 @@ gulp.task('build:less', function () {
 
 gulp.task('build:static', function () {
     gulp.src(src + '/**/*.?(png|jpg|gif)')
-        .pipe(imagemin({use: [pngquant()]}))
+        .pipe(imagemin())
+        .pipe(webp())
         .pipe(gulp.dest(dest))
 })
 

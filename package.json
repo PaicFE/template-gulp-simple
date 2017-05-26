@@ -30,7 +30,7 @@
     "gulp-rev-collector": "^1.2.1",
     "gulp-rimraf": "^0.2.1",
     "gulp-uglify": "^3.0.0",
-    "imagemin-pngquant": "^5.0.0",
+    "gulp-webp": "^2.3.0",
     "postcss-pxtorem": "^4.0.1",
     "posthtml-px2rem": "0.0.3"
   }
