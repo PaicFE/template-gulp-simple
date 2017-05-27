@@ -1,8 +1,14 @@
 @import '../../assets/lib-rem.less';
 @import '../../assets/lib-reset.less';
 
+
+@dark-color: #ec5504;
+@light-color: #ffa778;
+
+
 body {
-    text-align: center
+    text-align: center;
+    color: @dark-color;
 }
 
 .flex-content {
@@ -12,12 +18,22 @@ body {
 
 .logo{ 
     margin-top: 30px;
+    padding:10px;
+    border-bottom: 1px solid @dark-color
 }
 
 .title {
     width: 150px;
     font-size: 20px;
-    margin: 0 auto;
-    color: #ec5504;
-    border-bottom: 1px solid #ec5504;
+    margin: 20px auto;
 }
+
+a{
+    font-size: 15px;
+    color: @dark-color;
+    text-decoration: blink;
+    border: 1px solid @dark-color;
+    padding: 5px 10px;
+    border-radius: 10px;
+}
+

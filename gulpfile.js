@@ -4,7 +4,6 @@ var gulpif = require('gulp-if')
 var bs = require('browser-sync')
 var less = require('gulp-less')
 var cssnano = require('gulp-cssnano')
-var rimraf = require('gulp-rimraf')
 var postcss = require('gulp-postcss')
 var postcssPxtorem = require('postcss-pxtorem')
 var posthtml = require('gulp-posthtml')
@@ -15,11 +14,12 @@ var lazyimagecss = require('gulp-lazyimagecss')
 var webp = require('gulp-webp')
 var RevAll = require('gulp-rev-all')
 var revDel = require('gulp-rev-delete-original')
+var htmlmin = require('gulp-htmlmin')
+var uglify = require('gulp-uglify')
 var clean = require('gulp-clean')
 var cache = require('gulp-cache')
-var htmlmin = require('gulp-htmlmin')
 var replace = require('gulp-replace')
-var uglify = require('gulp-uglify')
+
 
 var config = {
     src: 'src',
@@ -55,11 +55,6 @@ var dev = './' + config.dev + '/' + config.file
 
 function getDest(){
     return config.isProd ? dist: dev
-}
-
-function remove() {
-    return gulp.src([getDest()], { read: false })
-        .pipe(rimraf())
 }
 
 function buildCss() {
