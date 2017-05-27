@@ -1,3 +1,4 @@
+var path = require('path')
 var gulp = require('gulp')
 var gulpif = require('gulp-if')
 var bs = require('browser-sync')
@@ -51,78 +52,104 @@ var config = {
 var src = './' + config.src + '/' + config.file
 var dist = './' + config.dist + '/' + config.file
 var dev = './' + config.dev + '/' + config.file
-var dest = dist
-var tmp = './tmp/' + config.file
 
-gulp.task('build:rm', function () {
-    gulp.src([dest], { read: false })
+function getDest(){
+    return config.isProd ? dist: dev
+}
+
+function remove() {
+    return gulp.src([getDest()], { read: false })
         .pipe(rimraf())
-})
+}
 
-gulp.task('build:css', function () {
-    gulp.src(src + '/**/*.css')
+function buildCss() {
+    return gulp.src(src + '/**/*.css')
         .pipe(lazyimagecss())
         .pipe(postcss(config.processors))
         .pipe(gulpif(config.isProd, cssnano()))
-        .pipe(gulp.dest(dest))
+        .pipe(gulp.dest(getDest()))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
-})
+}
 
-gulp.task('build:less', function () {
-    gulp.src(src + '/**/*.less')
+function buildLess() {
+    return gulp.src(src + '/**/*.less')
         .pipe(less().on('error', function () { this.emit('end') }))
         .pipe(lazyimagecss())
         .pipe(postcss(config.processors))
         .pipe(gulpif(config.isProd, cssnano()))
-        .pipe(gulp.dest(dest))
+        .pipe(gulp.dest(getDest()))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
-})
+}
 
-gulp.task('build:static', function () {
-    gulp.src(src + '/**/*.?(png|jpg|gif)')
+function buildStatic() {
+    return gulp.src(src + '/**/*.?(png|jpg|gif)')
         .pipe(imagemin())
-        .pipe(gulp.dest(dest))
-        .pipe(webp())
-        .pipe(gulp.dest(dest))
-})
+        .pipe(gulp.dest(getDest()))
+}
 
-gulp.task('build:html', function () {
-    gulp.src(src + '/**/*.html')
+function buildWebp() {
+    var _dest =getDest()
+    return gulp.src(_dest + '/**/*.?(png|jpg|gif)')
+        .pipe(webp())
+        .pipe(gulp.dest(_dest))
+}
+
+function buildHtml() {
+    return gulp.src(src + '/**/*.html')
         .pipe(posthtml(posthtmlPx2rem({ rootValue: 20, minPixelValue: 2 })))
         .pipe(gulpif(config.isProd, htmlmin(config.html)))
-        .pipe(gulp.dest(dest))
+        .pipe(gulp.dest(getDest()))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
-})
+}
 
-gulp.task('build:script', function () {
-    gulp.src(src + '/**/*.js')
+function buildScript() {
+    return gulp.src(src + '/**/*.js')
         .pipe(gulpif(config.isProd, uglify()))
-        .pipe(gulp.dest(dest))
+        .pipe(gulp.dest(getDest()))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
-})
+}
 
-gulp.task('release', ['build:css', 'build:less', 'build:static', 'build:html', 'build:script'])
+function hash() {
+    var _dest =getDest()
+    return gulp.src(_dest + '/**/*')
+        .pipe(RevAll.revision({
+            fileNameManifest: 'manifest.json',
+            dontRenameFile: ['.html', '.php'],
+            dontUpdateReference: ['.html'],
+            transformFilename: function (file, hash) {
+                var filename = path.basename(file.path)
+                var ext = path.extname(file.path)
 
-gulp.task('hash', function(){
-    gulp.src(dest + '/**/*')
-        .pipe(gulp.dest(tmp))  
-        .pipe(RevAll.revision())
-        .pipe(gulp.dest(tmp))
+                if (/^\d+\..*\.js$/.test(filename)) {
+                    return filename
+                } else {
+                    return path.basename(file.path, ext) + '.' + hash.substr(0, 8) + ext
+                }
+
+            }
+        }))
+        .pipe(gulp.dest(_dest))
         .pipe(revDel({
             exclude: /(.html|.htm)$/
         }))
         .pipe(RevAll.manifestFile())
-        .pipe(gulp.dest(tmp))
-})
+        .pipe(gulp.dest(_dest))
+}
 
-gulp.task('watch', function () {
-    gulp.watch(src + '/**/*.css', ['build:css'])
-    gulp.watch(src + '/**/*.less', ['build:less'])
-    gulp.watch(src + '/**/*.js', ['build:script'])
-    gulp.watch(src + '/**/*.html', ['build:html'])
-})
+function develop(cb){
+    config.isProd = false
+    cb()
+}
 
-gulp.task('server', function () {
+function watch(cb) {
+    gulp.watch(src + '/**/*.css', buildCss)
+    gulp.watch(src + '/**/*.less', buildLess)
+    gulp.watch(src + '/**/*.js', buildScript)
+    gulp.watch(src + '/**/*.html', buildHtml)
+    cb()
+}
+
+function server(cb) {
     var port = config.port
     bs.init({
         server: {
@@ -137,13 +164,13 @@ gulp.task('server', function () {
         port: port,
         startPath: '/' + config.file
     })
-})
+    cb()
+}
 
-gulp.task('default', function () {
-    dest = dev
-    config.isProd = false
-    gulp.start('release')
-    gulp.start('server')
-    gulp.start('watch')
-})
+
+var release = gulp.parallel(buildCss, buildLess, buildStatic, buildHtml, buildScript)
+
+gulp.task('build', gulp.series(release, hash, buildWebp))
+
+gulp.task('default', gulp.series(develop, release, server, watch))
 
