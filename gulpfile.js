@@ -19,48 +19,25 @@ var uglify = require('gulp-uglify')
 var clean = require('gulp-clean')
 var cache = require('gulp-cache')
 var replace = require('gulp-replace')
+var config = require('./gulpfile.config')
 
 
-var config = {
-    src: 'src',
-    dist: 'dist',
-    dev: 'dev',
-    file: 'hello',
-    port: 3000,
-    processors: [
-        postcssPxtorem({
-            root_value: 20, // 基准值 html{ font-zise: 20px; }
-            prop_white_list: [], // 对所有 px 值生效
-            minPixelValue: 2 // 忽略 1px 值
-        }),
-        autoprefixer({ browsers: ['last 5 versions'] }),
-    ],
-    htmlRem: posthtmlPx2rem({
-        rootValue: 20,
-        minPixelValue: 2
-    }),
-    html: {
-        removeComments: true, // 清除HTML注释
-        collapseWhitespace: true,//压缩HTML
-        removeEmptyAttributes: true, // 删除所有空格作属性值 <input id="" /> ==> <input />
-        minifyJS: true, // 压缩页面JS
-        minifyCSS: true, // 压缩页面CSS
-    },
-    isProd: true
-}
 
 var src = './' + config.src + '/' + config.file
 var dist = './' + config.dist + '/' + config.file
 var dev = './' + config.dev + '/' + config.file
 
-function getDest(){
-    return config.isProd ? dist: dev
+function getDest() {
+    return config.isProd ? dist : dev
 }
 
 function buildCss() {
     return gulp.src(src + '/**/*.css')
         .pipe(lazyimagecss())
-        .pipe(postcss(config.processors))
+        .pipe(postcss([
+            postcssPxtorem(config.rem),
+            autoprefixer(config.autoprefix),
+        ]))
         .pipe(gulpif(config.isProd, cssnano()))
         .pipe(gulp.dest(getDest()))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
@@ -70,7 +47,10 @@ function buildLess() {
     return gulp.src(src + '/**/*.less')
         .pipe(less().on('error', function () { this.emit('end') }))
         .pipe(lazyimagecss())
-        .pipe(postcss(config.processors))
+        .pipe(postcss([
+            postcssPxtorem(config.rem),
+            autoprefixer(config.autoprefix),
+        ]))
         .pipe(gulpif(config.isProd, cssnano()))
         .pipe(gulp.dest(getDest()))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
@@ -83,7 +63,7 @@ function buildStatic() {
 }
 
 function buildWebp() {
-    var _dest =getDest()
+    var _dest = getDest()
     return gulp.src(_dest + '/**/*.?(png|jpg|gif)')
         .pipe(webp())
         .pipe(gulp.dest(_dest))
@@ -91,7 +71,7 @@ function buildWebp() {
 
 function buildHtml() {
     return gulp.src(src + '/**/*.html')
-        .pipe(posthtml(posthtmlPx2rem({ rootValue: 20, minPixelValue: 2 })))
+        .pipe(posthtml(posthtmlPx2rem(config.htmlRem)))
         .pipe(gulpif(config.isProd, htmlmin(config.html)))
         .pipe(gulp.dest(getDest()))
         .pipe(gulpif(!config.isProd, bs.reload({ stream: true })))
@@ -105,7 +85,7 @@ function buildScript() {
 }
 
 function hash() {
-    var _dest =getDest()
+    var _dest = getDest()
     return gulp.src(_dest + '/**/*')
         .pipe(RevAll.revision({
             fileNameManifest: 'manifest.json',
@@ -131,7 +111,7 @@ function hash() {
         .pipe(gulp.dest(_dest))
 }
 
-function develop(cb){
+function develop(cb) {
     config.isProd = false
     cb()
 }
