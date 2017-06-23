@@ -12,6 +12,7 @@ var autoprefixer = require('autoprefixer')
 var imagemin = require('gulp-imagemin')
 var lazyimagecss = require('gulp-lazyimagecss')
 var webp = require('gulp-webp')
+var ejs = require('gulp-ejs')
 var RevAll = require('gulp-rev-all')
 var revDel = require('gulp-rev-delete-original')
 var htmlmin = require('gulp-htmlmin')
@@ -57,20 +58,21 @@ function buildLess() {
 }
 
 function buildStatic() {
-    return gulp.src(src + '/**/*.?(png|jpg|gif)')
+    return gulp.src(src + '/**/*.?(png|jpg|jpeg|gif)')
         .pipe(imagemin())
         .pipe(gulp.dest(getDest()))
 }
 
 function buildWebp() {
     var _dest = getDest()
-    return gulp.src(_dest + '/**/*.?(png|jpg|gif)')
+    return gulp.src(_dest + '/**/*.?(png|jpg|jpeg|gif)')
         .pipe(webp())
         .pipe(gulp.dest(_dest))
 }
 
 function buildHtml() {
     return gulp.src(src + '/**/*.html')
+        .pipe(ejs(config.ejs))
         .pipe(posthtml(posthtmlPx2rem(config.htmlRem)))
         .pipe(gulpif(config.isProd, htmlmin(config.html)))
         .pipe(gulp.dest(getDest()))

@@ -2,7 +2,7 @@ module.exports = {
     src: 'src',
     dist: 'dist',
     dev: 'dev',
-    file: 'epass',
+    file: 'hello',
     port: 3000,
     rem: {
         root_value: 20, // 基准值 html{ font-zise: 20px; }
@@ -23,5 +23,6 @@ module.exports = {
         minifyJS: true, // 压缩页面JS
         minifyCSS: true, // 压缩页面CSS
     },
-    isProd: true
+    isProd: true,
+    ejs: { page: 'kuaigan' },
 }

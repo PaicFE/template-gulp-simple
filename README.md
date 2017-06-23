@@ -17,7 +17,7 @@ This is a template for simple gulp project, inspired by [tmt-workflow](https://g
 - revision
 - sprite
 - gzip
-
+- ejs
 
 ## Folders
 
